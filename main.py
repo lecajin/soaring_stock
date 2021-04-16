@@ -5,6 +5,7 @@ import re
 import time
 import datetime
 import telegram
+import requests
 
 
 goldenCrossStockList = []
@@ -154,8 +155,12 @@ def makeDataFrame(codeList):
     for code in codeList:
         stockDf = pd.DataFrame()
         for page in range(1, 21): #200일 데이터 가져옴(21) (1페이지당 10거래일 DATA)
+            headers = {'User-Agent' : 'Mozilla/5.0'}
             priceUrl = 'https://finance.naver.com/item/sise_day.nhn?code='+str(code)+'&page='+str(page)
-            stockDf = stockDf.append(pd.read_html(priceUrl, header=0)[0], ignore_index=True)
+            response = requests.get(priceUrl, headers = headers)
+            html = BeautifulSoup(response.text, 'lxml')
+            table = html.select('table')
+            stockDf = stockDf.append(pd.read_html(str(table))[0], ignore_index=True)
             time.sleep(0.1)
         stockDf = stockDf.dropna() #결측값 행 삭제
         if getGoldenCrossStock(stockDf):
